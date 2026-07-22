@@ -1,0 +1,1130 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Filtro de Base — Consultas</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --ink:#16202a; --teal:#0f766e; --teal-soft:#e6f2f1; --line:#e2e6ea;
+    --mute:#6b7885; --bg:#f6f8f9; --white:#fff; --amber:#b45309; --amber-soft:#fef3e2;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    font-size:13px;color:var(--ink);background:var(--bg);min-height:100vh}
+  ::-webkit-scrollbar{width:9px;height:9px}
+  ::-webkit-scrollbar-thumb{background:#cfd6dc;border-radius:6px}
+  ::-webkit-scrollbar-track{background:transparent}
+
+  header{display:flex;justify-content:space-between;align-items:center;gap:12px;
+    padding:12px 20px;background:var(--white);border-bottom:1px solid var(--line);
+    position:sticky;top:0;z-index:30;flex-wrap:wrap}
+  .h-left{display:flex;align-items:center;gap:12px}
+  .logo{width:34px;height:34px;border-radius:9px;background:var(--teal);color:#fff;
+    display:grid;place-items:center;font-size:17px;flex-shrink:0}
+  h1{font-size:16px;font-weight:700;letter-spacing:-.02em}
+  .sub{font-size:12px;color:var(--mute)}
+  .h-right{display:flex;gap:8px;flex-wrap:wrap}
+  button{font-family:inherit;cursor:pointer;border:none;background:none}
+  .btn{display:flex;align-items:center;gap:6px;padding:9px 14px;border-radius:8px;
+    font-weight:600;font-size:12.5px;transition:filter .15s}
+  .btn:hover{filter:brightness(.96)}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+  .btn-primary{background:var(--teal);color:#fff}
+  .btn-ghost{background:var(--white);color:var(--ink);border:1px solid var(--line);font-weight:500}
+  .btn-amber{background:var(--amber);color:#fff}
+
+  .tabs{display:flex;gap:2px;background:var(--white);padding:0 20px;
+    border-bottom:1px solid var(--line);position:sticky;top:59px;z-index:29}
+  .tab{padding:11px 16px;font-size:13px;font-weight:600;color:var(--mute);
+    border-bottom:2px solid transparent;margin-bottom:-1px}
+  .tab.on{color:var(--teal);border-bottom-color:var(--teal)}
+
+  .pane{padding:18px 20px}
+  .card{background:var(--white);border:1px solid var(--line);border-radius:12px;padding:18px}
+  .card h3{font-size:14px;font-weight:700;margin-bottom:5px}
+  .card p.desc{font-size:12.5px;color:var(--mute);line-height:1.55;margin-bottom:14px}
+
+  .dropzone{padding:40px 30px;background:var(--white);border:2px dashed var(--line);
+    border-radius:14px;text-align:center;cursor:pointer;transition:all .15s}
+  .dropzone.over{border-color:var(--teal);background:var(--teal-soft)}
+  .dropzone .ico{font-size:34px;margin-bottom:12px;color:var(--teal)}
+  .dropzone h2{font-size:16px;font-weight:600;margin-bottom:5px}
+  .dropzone p{color:var(--mute);font-size:12.5px}
+
+  .note{padding:12px 15px;background:var(--white);border:1px solid var(--line);
+    border-left:3px solid var(--teal);border-radius:8px;font-size:12.5px;
+    color:var(--mute);line-height:1.55;margin-top:14px}
+  .note.warn{border-left-color:var(--amber);background:var(--amber-soft)}
+  .note b{color:var(--ink)}
+
+  .layout{display:flex;align-items:flex-start}
+  aside{width:270px;flex-shrink:0;background:var(--white);border-right:1px solid var(--line);
+    position:sticky;top:100px;height:calc(100vh - 100px);overflow-y:auto;padding:15px;
+    display:flex;flex-direction:column;gap:11px}
+  .side-head{display:flex;justify-content:space-between;align-items:center}
+  .side-title{display:flex;align-items:center;gap:7px;font-weight:700;font-size:13px}
+  .badge{background:var(--teal);color:#fff;font-size:11px;font-weight:700;
+    padding:1px 7px;border-radius:20px;min-width:18px;text-align:center}
+  .link-btn{color:var(--teal);font-weight:600;font-size:12px}
+  .search-wrap{position:relative;display:flex;align-items:center}
+  .search-wrap input{width:100%;padding:9px 28px 9px 28px;border:1px solid var(--line);
+    border-radius:8px;font-size:13px;outline:none;font-family:inherit}
+  .search-wrap .si{position:absolute;left:9px;color:var(--mute);font-size:12px}
+  .search-wrap .sc{position:absolute;right:6px;color:var(--mute);font-size:14px;padding:3px}
+  input:focus,select:focus{border-color:var(--teal)!important;
+    box-shadow:0 0 0 2px rgba(15,118,110,.13)}
+  .filter-list{display:flex;flex-direction:column;gap:7px}
+
+  .fc{border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--white)}
+  .fc.active{border-color:var(--teal);box-shadow:0 0 0 1px rgba(15,118,110,.13)}
+  .fc-head{width:100%;display:flex;justify-content:space-between;align-items:center;
+    padding:9px 11px;font-size:12.5px;font-weight:600;text-align:left}
+  .fc-head .lbl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .fc-head .rt{display:flex;align-items:center;gap:6px;color:var(--mute);flex-shrink:0}
+  .fc-clear{color:var(--mute);font-size:13px;padding:2px 4px}
+  .fc-body{padding:0 11px 11px}
+  .fc-body input{width:100%;padding:8px 10px;border:1px solid var(--line);
+    border-radius:7px;font-size:12.5px;outline:none;font-family:inherit}
+  .sel-info{display:flex;justify-content:space-between;align-items:center;
+    font-size:11.5px;color:var(--mute);margin:6px 0 5px;font-weight:600}
+  .sel-info button{color:var(--teal);font-size:11.5px;font-weight:600}
+  .check-list{display:flex;flex-direction:column;gap:4px;max-height:190px;overflow-y:auto}
+  .check{display:flex;align-items:flex-start;gap:7px;font-size:12px;cursor:pointer;
+    padding:2px 0;line-height:1.35;word-break:break-word}
+  .check input{width:auto;flex-shrink:0;margin-top:2px;accent-color:var(--teal)}
+  .empty-note{font-size:12px;color:var(--mute);font-style:italic}
+  .range{display:flex;align-items:center;gap:6px}
+  .range input{flex:1;min-width:0}
+  .range span{color:var(--mute);font-size:12px}
+
+  main{flex:1;min-width:0;padding:18px;display:flex;flex-direction:column;gap:13px}
+  .stats{display:flex;gap:10px;flex-wrap:wrap}
+  .stat{background:var(--white);border:1px solid var(--line);border-radius:11px;
+    padding:12px 15px;min-width:145px;flex:1 1 auto}
+  .stat.accent{border-color:var(--teal);background:var(--teal-soft)}
+  .stat .l{font-size:11px;color:var(--mute);font-weight:600;text-transform:uppercase;
+    letter-spacing:.04em}
+  .stat .v{font-size:21px;font-weight:700;margin-top:3px;letter-spacing:-.02em}
+  .stat.accent .v{color:var(--teal)}
+  .stat .s{font-size:11.5px;color:var(--mute);margin-top:2px}
+  .chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+  .chip{font-size:11.5px;background:var(--bg);border-radius:6px;padding:3px 7px}
+
+  .table-wrap{background:var(--white);border:1px solid var(--line);border-radius:11px;
+    overflow:auto;max-height:calc(100vh - 300px)}
+  table{border-collapse:collapse;width:max-content;min-width:100%;font-size:12.5px}
+  th{position:sticky;top:0;background:#fbfcfc;border-bottom:2px solid var(--line);
+    padding:10px 12px;text-align:left;font-weight:600;white-space:nowrap;cursor:pointer;
+    user-select:none;color:var(--mute);z-index:2}
+  th.pri{color:var(--teal);background:var(--teal-soft)}
+  td{padding:8px 12px;border-bottom:1px solid #f0f2f4;white-space:nowrap;
+    max-width:260px;overflow:hidden;text-overflow:ellipsis}
+  td.num{text-align:right;font-variant-numeric:tabular-nums}
+  tbody tr:nth-child(even){background:#fafbfb}
+  tbody tr:hover{background:var(--teal-soft)}
+  .no-results{padding:50px 20px;text-align:center;color:var(--mute);
+    display:flex;flex-direction:column;align-items:center;gap:8px}
+  .table-foot{padding:10px 14px;font-size:12px;color:var(--mute);
+    border-top:1px solid var(--line);background:#fbfcfc}
+  .hidden{display:none!important}
+
+  .hist-row{display:flex;justify-content:space-between;align-items:center;
+    padding:11px 0;border-bottom:1px solid var(--line);font-size:12.5px;gap:12px}
+  .hist-row:last-child{border-bottom:none}
+  .hist-row .nm{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .hist-row .mt{color:var(--mute);font-size:11.5px}
+  .stat-line{display:flex;gap:20px;flex-wrap:wrap;margin-bottom:14px}
+  .stat-line div span{display:block}
+  .stat-line .n{font-size:20px;font-weight:700;letter-spacing:-.02em}
+  .stat-line .c{font-size:11px;color:var(--mute);font-weight:600;
+    text-transform:uppercase;letter-spacing:.04em}
+  .bar{height:6px;background:var(--bg);border-radius:4px;overflow:hidden;margin-top:9px}
+  .bar > div{height:100%;background:var(--teal);transition:width .3s}
+
+  @media(max-width:860px){
+    .layout{flex-direction:column}
+    aside{width:100%;position:static;height:auto;border-right:none;
+      border-bottom:1px solid var(--line)}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="h-left">
+    <div class="logo">&#9923;</div>
+    <div>
+      <h1>Filtro de Base</h1>
+      <div class="sub" id="subtitle">Nenhuma consulta no histórico</div>
+    </div>
+  </div>
+  <div class="h-right">
+    <button class="btn btn-ghost hidden" id="btnAddMore">+ Adicionar planilha</button>
+    <button class="btn btn-primary hidden" id="btnExport">Exportar</button>
+  </div>
+</header>
+
+<div class="tabs">
+  <button class="tab on" data-tab="base">Base</button>
+  <button class="tab" data-tab="cruzar">Cruzar lista</button>
+  <button class="tab" data-tab="hist">Histórico</button>
+</div>
+
+<div id="tab-base">
+  <div class="pane hidden" id="emptyState">
+    <div class="dropzone" id="dropzone">
+      <div class="ico">&#9636;</div>
+      <h2>Solte a planilha de simulações aqui</h2>
+      <p>CSV, XLSX ou XLS — pode subir várias, elas se acumulam</p>
+    </div>
+    <div class="note">
+      <b>Os dados ficam salvos neste navegador.</b> Cada planilha que você subir é
+      somada ao histórico, sem duplicar o que já existe. Nada é enviado para nenhum
+      servidor. Se limpar os dados do navegador, o histórico é perdido.
+    </div>
+  </div>
+
+  <div class="layout hidden" id="workState">
+    <aside>
+      <div class="side-head">
+        <div class="side-title">Filtros <span class="badge hidden" id="filterBadge">0</span></div>
+        <button class="link-btn hidden" id="btnClear">Limpar</button>
+      </div>
+      <div class="search-wrap">
+        <span class="si">&#8981;</span>
+        <input type="text" id="globalSearch" placeholder="Buscar em tudo…">
+        <button class="sc hidden" id="btnClearSearch">&times;</button>
+      </div>
+      <div class="filter-list" id="filterList"></div>
+    </aside>
+    <main>
+      <div class="stats" id="stats"></div>
+      <div class="table-wrap">
+        <table><thead><tr id="tableHead"></tr></thead><tbody id="tableBody"></tbody></table>
+        <div class="no-results hidden" id="noResults">
+          <div style="font-size:24px">&#8981;</div>
+          <p>Nenhum registro corresponde aos filtros.</p>
+          <button class="link-btn" id="btnClear2">Limpar filtros</button>
+        </div>
+        <div class="table-foot hidden" id="tableFoot"></div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<div id="tab-cruzar" class="pane hidden">
+  <div class="card">
+    <h3>Cruzar sua lista com o histórico</h3>
+    <p class="desc">
+      Suba uma lista com telefones e/ou CPFs. A ferramenta procura cada contato no
+      histórico de simulações e devolve a última consulta de cada banco.
+      Aceita as duas chaves misturadas no mesmo arquivo — colunas com nome
+      "telefone", "celular", "cpf" ou "documento" são detectadas sozinhas.
+    </p>
+    <div class="dropzone" id="dzCross">
+      <div class="ico">&#8646;</div>
+      <h2>Solte sua lista de contatos aqui</h2>
+      <p>CSV, XLSX ou XLS</p>
+    </div>
+    <div class="note" id="crossHint">
+      <b>Antes de cruzar, carregue o histórico na aba Base.</b>
+      Sem simulações no histórico não há com o que comparar.
+    </div>
+  </div>
+
+  <div class="card hidden" id="crossResult" style="margin-top:14px">
+    <h3>Resultado do cruzamento</h3>
+    <div class="stat-line" id="crossStats"></div>
+    <div class="bar"><div id="crossBar" style="width:0%"></div></div>
+    <div class="note" id="crossNote" style="margin-top:14px"></div>
+    <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+      <button class="btn btn-primary" id="btnCrossToBase">Ver e filtrar resultado</button>
+      <button class="btn btn-ghost" id="btnCrossExport">Exportar tudo</button>
+      <button class="btn btn-ghost" id="btnCrossDiscard">Descartar</button>
+    </div>
+  </div>
+</div>
+
+<div id="tab-hist" class="pane hidden">
+  <div class="card">
+    <h3>Planilhas no histórico</h3>
+    <p class="desc">Tudo que foi carregado neste navegador.</p>
+    <div class="stat-line" id="histStats"></div>
+    <div id="histList"></div>
+    <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap">
+      <button class="btn btn-ghost" id="btnAddMore2">+ Adicionar planilha</button>
+      <button class="btn btn-amber" id="btnWipe">Apagar todo o histórico</button>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="fileInput" accept=".csv,.xlsx,.xls" class="hidden">
+<input type="file" id="crossInput" accept=".csv,.xlsx,.xls" class="hidden">
+<script>
+"use strict";
+
+/* ==== Schema ============================================================ */
+var COLUMNS = [
+  {key:"Usuário",type:"text"},{key:"Banco",type:"select"},{key:"Equipe",type:"text"},
+  {key:"Franquia",type:"text"},{key:"Status",type:"select"},{key:"Horário Consulta",type:"date"},
+  {key:"CPF",type:"text"},{key:"Matrícula",type:"text"},{key:"Telefone",type:"text"},
+  {key:"Valor Parcela",type:"number"},{key:"Valor Liberado",type:"number"},{key:"Tabela",type:"text"},
+  {key:"Motivo",type:"select"},{key:"Data de Nascimento",type:"date"},{key:"Elegível",type:"select"},
+  {key:"Data de Admissão",type:"date"},{key:"Código da Categoria",type:"text"},{key:"CNAE",type:"select"},
+  {key:"Divisão CNAE",type:"text"},{key:"Descrição CNAE",type:"text"},{key:"CNPJ",type:"text"},
+  {key:"Nome da Empresa",type:"text"},{key:"Data Início das Atividades",type:"date"},
+  {key:"Capital Social",type:"number"},{key:"Código Porte",type:"text"},
+  {key:"Valor Base Margem",type:"number"},{key:"Valor Margem Disponível",type:"number"},
+  {key:"Valor Renda",type:"number"},{key:"Qtd. Empréstimos Ativos",type:"number"},
+  {key:"Criado Em",type:"date"},{key:"Atualizando Em",type:"date"}
+];
+var FILTERABLE = ["Banco","Status","Elegível","Motivo","Valor Parcela","CPF",
+  "Telefone","CNPJ","CNAE","Data de Admissão","Data Início das Atividades","Horário Consulta"];
+var FILTERABLE_SET = new Set(FILTERABLE);
+var MATCH_COL = "Encontrado";
+var SRC_COL   = "Origem Lista";
+
+/* ==== State ============================================================= */
+var rows = [], headers = [], activeColumns = [], filterCols = [];
+var filters = {}, distinctValues = {}, globalSearch = "";
+var sortCol = null, sortDir = "asc";
+var optQueries = {}, openPanels = {};
+var fileLog = [];
+var viewRows = null;
+var crossPending = null;
+var db = null;
+
+var DB_NAME = "filtro_base_db", STORE = "consultas", META = "meta";
+function $(id){ return document.getElementById(id); }
+
+/* ==== Helpers =========================================================== */
+function stripHtml(s){
+  if(s.indexOf("<") === -1) return s;
+  return s.replace(/<br\s*\/?>/gi," ").replace(/<[^>]+>/g,"")
+          .replace(/&nbsp;/gi," ").replace(/&amp;/gi,"&").replace(/\s+/g," ").trim();
+}
+function norm(v){
+  if(v === null || v === undefined) return "";
+  return stripHtml(String(v).trim());
+}
+function digits(v){ return norm(v).replace(/\D/g,""); }
+
+/* Excel often stores phones as numbers, so a cell can arrive as
+   "51936381045.0" or "5.1936381045e+10". Strip that before counting digits. */
+function cleanNumericText(v){
+  if(v === null || v === undefined) return "";
+  var s = norm(v);
+  if(!s) return "";
+  if(/[eE]\+?\d+$/.test(s) && /^[\d.,\-+eE]+$/.test(s)){
+    var f = Number(s.replace(",", "."));
+    if(!isNaN(f) && isFinite(f)) s = f.toFixed(0);
+  }
+  s = s.replace(/[.,]0+$/, "");        // trailing ".0" from float coercion
+  return s;
+}
+function normPhone(v){
+  var d = digits(cleanNumericText(v));
+  if(!d) return "";
+  if(d.length > 11 && d.slice(0,2) === "55") d = d.slice(2);
+  while(d.length > 11 && d.charAt(0) === "0") d = d.slice(1);
+  if(d.length === 10){
+    var ddd = d.slice(0,2), rest = d.slice(2);
+    if("6789".indexOf(rest.charAt(0)) > -1) d = ddd + "9" + rest;
+  }
+  return d.length >= 10 && d.length <= 11 ? d : "";
+}
+function normCpf(v){
+  var d = digits(cleanNumericText(v));
+  if(!d) return "";
+  // Excel drops leading zeros on numeric CPFs: 09533978 82 -> pad back to 11
+  if(d.length > 8 && d.length < 11) d = ("00000000000" + d).slice(-11);
+  return d.length === 11 ? d : "";
+}
+function parseNumber(v){
+  if(v === null || v === undefined || v === "") return null;
+  if(typeof v === "number") return v;
+  var s = String(v).replace(/[R$\s]/g,"");
+  if(s.indexOf(",") > -1 && s.indexOf(".") > -1) s = s.replace(/\./g,"").replace(",",".");
+  else if(s.indexOf(",") > -1) s = s.replace(",",".");
+  var n = parseFloat(s);
+  return isNaN(n) ? null : n;
+}
+function parseDate(v){
+  if(v === null || v === undefined || v === "") return null;
+  if(v instanceof Date) return isNaN(v.getTime()) ? null : v;
+  var s = String(v).trim(), m;
+  m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})[ T]?(\d{1,2})?:?(\d{2})?/);
+  if(m){
+    var y = m[3].length === 2 ? "20"+m[3] : m[3];
+    return new Date(+y, +m[2]-1, +m[1], +(m[4]||0), +(m[5]||0));
+  }
+  m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})[ T]?(\d{1,2})?:?(\d{2})?/);
+  if(m) return new Date(+m[1], +m[2]-1, +m[3], +(m[4]||0), +(m[5]||0));
+  var d = new Date(s);
+  return isNaN(d.getTime()) ? null : d;
+}
+function fmtNum(n){
+  if(n === null || n === undefined) return "";
+  return n.toLocaleString("pt-BR",{minimumFractionDigits:0,maximumFractionDigits:2});
+}
+function pad2(n){ return String(n).length < 2 ? "0"+n : String(n); }
+function fmtCell(v, type){
+  if(type === "number"){ var n = parseNumber(v); return n === null ? norm(v) : fmtNum(n); }
+  if(type === "date"){
+    var d = parseDate(v); if(!d) return norm(v);
+    var out = pad2(d.getDate())+"/"+pad2(d.getMonth()+1)+"/"+d.getFullYear();
+    if(d.getHours() || d.getMinutes()) out += " "+pad2(d.getHours())+":"+pad2(d.getMinutes());
+    return out;
+  }
+  return norm(v);
+}
+function esc(s){
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;")
+                  .replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+function rowKey(r){
+  var d = parseDate(r["Horário Consulta"]);
+  return normCpf(r["CPF"]) + "|" + norm(r["Banco"]) + "|" +
+         (d ? d.getTime() : norm(r["Horário Consulta"]));
+}
+
+/* ==== IndexedDB ========================================================= */
+function openDB(){
+  return new Promise(function(res, rej){
+    var req = indexedDB.open(DB_NAME, 1);
+    req.onupgradeneeded = function(e){
+      var d = e.target.result;
+      if(!d.objectStoreNames.contains(STORE)) d.createObjectStore(STORE, {keyPath:"_k"});
+      if(!d.objectStoreNames.contains(META))  d.createObjectStore(META,  {keyPath:"k"});
+    };
+    req.onsuccess = function(e){ res(e.target.result); };
+    req.onerror  = function(e){ rej(e.target.error); };
+  });
+}
+function dbAll(store){
+  return new Promise(function(res, rej){
+    var t = db.transaction(store, "readonly").objectStore(store).getAll();
+    t.onsuccess = function(e){ res(e.target.result || []); };
+    t.onerror  = function(e){ rej(e.target.error); };
+  });
+}
+function dbPutMany(store, items){
+  return new Promise(function(res, rej){
+    var tx = db.transaction(store, "readwrite"), os = tx.objectStore(store);
+    for(var i=0;i<items.length;i++) os.put(items[i]);
+    tx.oncomplete = function(){ res(); };
+    tx.onerror = function(e){ rej(e.target.error); };
+  });
+}
+function dbClear(store){
+  return new Promise(function(res, rej){
+    var tx = db.transaction(store, "readwrite");
+    tx.objectStore(store).clear();
+    tx.oncomplete = function(){ res(); };
+    tx.onerror = function(e){ rej(e.target.error); };
+  });
+}
+function loadFromDB(){
+  return dbAll(STORE).then(function(stored){
+    rows = stored.map(function(o){
+      var c = {};
+      for(var k in o){ if(k !== "_k") c[k] = o[k]; }
+      return c;
+    });
+    return dbAll(META);
+  }).then(function(meta){
+    var e = null;
+    for(var i=0;i<meta.length;i++) if(meta[i].k === "fileLog") e = meta[i];
+    fileLog = e ? e.v : [];
+    if(rows.length){ headers = deriveHeaders(rows); buildColumns(); buildDistinct(); }
+  });
+}
+function saveLog(){ return dbPutMany(META, [{k:"fileLog", v:fileLog}]); }
+
+function deriveHeaders(rs){
+  var seen = [], i, j;
+  for(i=0;i<COLUMNS.length;i++){
+    var k = COLUMNS[i].key;
+    for(j=0;j<rs.length;j++){ if(k in rs[j]){ seen.push(k); break; } }
+  }
+  var lim = Math.min(rs.length, 50);
+  for(i=0;i<lim;i++){
+    var ks = Object.keys(rs[i]);
+    for(j=0;j<ks.length;j++) if(seen.indexOf(ks[j]) === -1) seen.push(ks[j]);
+  }
+  return seen;
+}
+
+/* ==== Ingest ============================================================ */
+function readSheet(file){
+  return new Promise(function(res, rej){
+    var rd = new FileReader();
+    rd.onload = function(e){
+      try{
+        var wb = XLSX.read(new Uint8Array(e.target.result), {type:"array", cellDates:true});
+        var ws = wb.Sheets[wb.SheetNames[0]];
+        res(XLSX.utils.sheet_to_json(ws, {defval:"", raw:true}));
+      }catch(err){ rej(err); }
+    };
+    rd.onerror = function(){ rej(new Error("read fail")); };
+    rd.readAsArrayBuffer(file);
+  });
+}
+
+function addSheet(file){
+  readSheet(file).then(function(json){
+    if(!json.length){ alert("A planilha está vazia."); return; }
+    if(!("CPF" in json[0]) || !("Banco" in json[0])){
+      alert("Esta planilha não parece ser de simulações — faltam as colunas CPF e Banco.\n\n" +
+            "Para cruzar uma lista de contatos, use a aba \"Cruzar lista\".");
+      return;
+    }
+    var existing = new Set(rows.map(rowKey));
+    var fresh = [], seenNow = new Set(), dupes = 0;
+    for(var i=0;i<json.length;i++){
+      var k = rowKey(json[i]);
+      if(existing.has(k) || seenNow.has(k)){ dupes++; continue; }
+      seenNow.add(k); fresh.push(json[i]);
+    }
+    var p = Promise.resolve();
+    if(fresh.length){
+      var recs = fresh.map(function(r){
+        var o = {_k: rowKey(r)};
+        for(var kk in r) o[kk] = r[kk];
+        return o;
+      });
+      p = dbPutMany(STORE, recs).then(function(){
+        rows = rows.concat(fresh);
+        headers = deriveHeaders(rows);
+        buildColumns(); buildDistinct();
+      });
+    }
+    return p.then(function(){
+      fileLog.unshift({name:file.name, added:fresh.length, dupes:dupes, at:Date.now()});
+      return saveLog();
+    }).then(function(){
+      viewRows = null; crossPending = null;
+      $("crossResult").classList.add("hidden");
+      renderAll(); renderHist(); switchTab("base");
+      alert(fresh.length.toLocaleString("pt-BR") + " consultas adicionadas." +
+            (dupes ? "\n" + dupes.toLocaleString("pt-BR") +
+             " já estavam no histórico e foram ignoradas." : ""));
+    });
+  }).catch(function(err){
+    console.error(err);
+    alert("Não foi possível ler o arquivo. Verifique se é um CSV ou Excel válido.");
+  });
+}
+
+/* ==== Columns / distinct ================================================ */
+function buildColumns(){
+  var hs = new Set(headers.map(norm));
+  var known = COLUMNS.filter(function(c){ return hs.has(norm(c.key)); });
+  var extra = headers.filter(function(h){
+    for(var i=0;i<COLUMNS.length;i++) if(norm(COLUMNS[i].key) === norm(h)) return false;
+    return true;
+  }).map(function(h){
+    return {key:h, type:(h===MATCH_COL||h===SRC_COL)?"select":"text"};
+  });
+  activeColumns = known.concat(extra);
+  var byKey = new Map();
+  activeColumns.forEach(function(c){ byKey.set(norm(c.key), c); });
+  filterCols = [];
+  FILTERABLE.forEach(function(k){
+    var c = byKey.get(norm(k)); if(c) filterCols.push(c);
+  });
+  [SRC_COL, MATCH_COL].forEach(function(k){
+    var c = byKey.get(norm(k)); if(c) filterCols.unshift(c);
+  });
+}
+function buildDistinct(){
+  distinctValues = {};
+  var src = viewRows || rows;
+  filterCols.forEach(function(col){
+    if(col.type !== "select") return;
+    var set = new Set();
+    src.forEach(function(r){ var v = norm(r[col.key]); if(v) set.add(v); });
+    distinctValues[col.key] = Array.from(set).sort(function(a,b){
+      return a.localeCompare(b,"pt-BR");
+    });
+  });
+}
+
+/* ==== Cross ============================================================= */
+function detectKeyCols(sample){
+  var keys = Object.keys(sample), phone = [], cpf = [];
+  keys.forEach(function(k){
+    var n = k.toLowerCase();
+    if(/telefone|celular|fone|whats|contato|tel\b/.test(n)) phone.push(k);
+    else if(/cpf|documento|doc\b/.test(n)) cpf.push(k);
+  });
+  return {phone:phone, cpf:cpf};
+}
+function extractKeys(row, cols){
+  var phones = new Set(), cpfs = new Set();
+  cols.phone.forEach(function(k){ var p = normPhone(row[k]); if(p) phones.add(p); });
+  cols.cpf.forEach(function(k){ var c = normCpf(row[k]); if(c) cpfs.add(c); });
+  if(!phones.size && !cpfs.size){
+    Object.keys(row).forEach(function(k){
+      var c = normCpf(row[k]); if(c){ cpfs.add(c); return; }
+      var p = normPhone(row[k]); if(p) phones.add(p);
+    });
+  }
+  return {phones:Array.from(phones), cpfs:Array.from(cpfs)};
+}
+function buildIndexes(){
+  var byCpf = new Map(), byPhone = new Map(), phoneToCpf = new Map();
+  rows.forEach(function(r){
+    var c = normCpf(r["CPF"]), p = normPhone(r["Telefone"]);
+    if(c){ if(!byCpf.has(c)) byCpf.set(c, []); byCpf.get(c).push(r); }
+    if(p){ if(!byPhone.has(p)) byPhone.set(p, []); byPhone.get(p).push(r); }
+    if(c && p){ if(!phoneToCpf.has(p)) phoneToCpf.set(p, new Set()); phoneToCpf.get(p).add(c); }
+  });
+  return {byCpf:byCpf, byPhone:byPhone, phoneToCpf:phoneToCpf};
+}
+function latestPerBank(list){
+  var best = new Map();
+  list.forEach(function(r){
+    var b = norm(r["Banco"]) || "(sem banco)";
+    var d = parseDate(r["Horário Consulta"]);
+    var t = d ? d.getTime() : 0;
+    var cur = best.get(b);
+    if(!cur || t > cur.t) best.set(b, {t:t, r:r});
+  });
+  return Array.from(best.values()).map(function(x){ return x.r; });
+}
+
+function crossList(file){
+  if(!rows.length){ alert("Carregue o histórico de simulações antes de cruzar."); return; }
+  readSheet(file).then(function(list){
+    if(!list.length){ alert("A lista está vazia."); return; }
+    var cols = detectKeyCols(list[0]);
+    var idx = buildIndexes();
+    var out = [], seen = new Set();
+    var matched = 0, notFound = 0, viaBridge = 0, noKey = 0;
+
+    list.forEach(function(item){
+      var k = extractKeys(item, cols);
+      if(!k.phones.length && !k.cpfs.length){ noKey++; return; }
+      var label = k.cpfs.length ? k.cpfs[0] : k.phones[0];
+      var hits = [], bridged = false;
+
+      k.cpfs.forEach(function(c){
+        if(idx.byCpf.has(c)) hits = hits.concat(idx.byCpf.get(c));
+      });
+      k.phones.forEach(function(p){
+        if(idx.byPhone.has(p)) hits = hits.concat(idx.byPhone.get(p));
+        if(idx.phoneToCpf.has(p)){
+          idx.phoneToCpf.get(p).forEach(function(c){
+            if(idx.byCpf.has(c)){ hits = hits.concat(idx.byCpf.get(c)); bridged = true; }
+          });
+        }
+      });
+
+      if(!hits.length){
+        notFound++;
+        var blank = {};
+        headers.forEach(function(h){ blank[h] = ""; });
+        blank["CPF"] = k.cpfs.length ? k.cpfs[0] : "";
+        blank["Telefone"] = k.phones.length ? k.phones[0] : "";
+        blank[MATCH_COL] = "Não encontrado";
+        blank[SRC_COL] = label;
+        out.push(blank);
+        return;
+      }
+      matched++;
+      if(bridged) viaBridge++;
+      latestPerBank(hits).forEach(function(r){
+        var key = rowKey(r) + "|" + label;
+        if(seen.has(key)) return;
+        seen.add(key);
+        var c = {};
+        for(var kk in r) c[kk] = r[kk];
+        c[MATCH_COL] = "Encontrado";
+        c[SRC_COL] = label;
+        out.push(c);
+      });
+    });
+
+    crossPending = {rows:out, total:list.length, matched:matched, notFound:notFound,
+                    viaBridge:viaBridge, noKey:noKey, fileName:file.name, cols:cols};
+    renderCross();
+  }).catch(function(err){
+    console.error(err);
+    alert("Não foi possível ler o arquivo.");
+  });
+}
+
+function statLine(n, c){
+  return '<div><span class="n">'+esc(n)+'</span><span class="c">'+esc(c)+'</span></div>';
+}
+function renderCross(){
+  var c = crossPending;
+  if(!c){ $("crossResult").classList.add("hidden"); return; }
+  $("crossResult").classList.remove("hidden");
+  var pct = c.total ? Math.round(c.matched / c.total * 100) : 0;
+  var consultas = c.rows.filter(function(r){ return r[MATCH_COL] === "Encontrado"; }).length;
+
+  $("crossStats").innerHTML =
+    statLine(c.total.toLocaleString("pt-BR"), "contatos na lista") +
+    statLine(c.matched.toLocaleString("pt-BR"), "encontrados (" + pct + "%)") +
+    statLine(consultas.toLocaleString("pt-BR"), "consultas retornadas") +
+    statLine(c.notFound.toLocaleString("pt-BR"), "sem consulta");
+  $("crossBar").style.width = pct + "%";
+
+  var msg = "<b>Como ler:</b> cada contato encontrado traz a última consulta de cada banco. " +
+            "Um cliente consultado no V8 e no FACTA aparece em duas linhas. " +
+            "A coluna <b>" + MATCH_COL + "</b> separa quem foi achado de quem não foi.";
+  var det = [];
+  if(c.cols.phone.length) det.push("telefone: " + c.cols.phone.join(", "));
+  if(c.cols.cpf.length) det.push("CPF: " + c.cols.cpf.join(", "));
+  if(det.length) msg += "<br><br><b>Colunas usadas —</b> " + esc(det.join(" · ")) + ".";
+  else msg += "<br><br>Não identifiquei colunas pelo nome, então varri todas as células " +
+              "procurando CPFs e telefones válidos.";
+  if(c.viaBridge) msg += "<br><br>" + c.viaBridge.toLocaleString("pt-BR") +
+    " contato(s) foram achados pelo telefone e ampliados via CPF — isso recupera consultas " +
+    "que ficaram sem telefone preenchido na origem.";
+  if(c.noKey) msg += "<br><br><b>" + c.noKey.toLocaleString("pt-BR") +
+    " linha(s) da sua lista não tinham telefone nem CPF válido</b> e foram ignoradas.";
+  $("crossNote").innerHTML = msg;
+}
+
+/* ==== Filtering ========================================================= */
+function baseRows(){ return viewRows || rows; }
+function getFiltered(){
+  var out = baseRows().filter(function(r){
+    for(var i=0;i<filterCols.length;i++){
+      var col = filterCols[i], f = filters[col.key];
+      if(!f) continue;
+      var raw = r[col.key];
+      if(col.type === "text"){
+        if(f.value){
+          var needle = f.value.toLowerCase();
+          var hay = norm(raw).toLowerCase();
+          var nd = digits(f.value);
+          if(hay.indexOf(needle) === -1 && !(nd && digits(raw).indexOf(nd) > -1)) return false;
+        }
+      }else if(col.type === "select"){
+        if(f.values && f.values.length && f.values.indexOf(norm(raw)) === -1) return false;
+      }else if(col.type === "number"){
+        var n = parseNumber(raw);
+        if(f.min !== null && f.min !== undefined && (n === null || n < f.min)) return false;
+        if(f.max !== null && f.max !== undefined && (n === null || n > f.max)) return false;
+      }else if(col.type === "date"){
+        var d = parseDate(raw);
+        if(f.from && (!d || d < new Date(f.from+"T00:00:00"))) return false;
+        if(f.to && (!d || d > new Date(f.to+"T23:59:59"))) return false;
+      }
+    }
+    return true;
+  });
+
+  if(globalSearch.trim()){
+    var q = globalSearch.toLowerCase(), qd = digits(globalSearch);
+    out = out.filter(function(r){
+      return activeColumns.some(function(c){
+        var hay = norm(r[c.key]).toLowerCase();
+        if(hay.indexOf(q) > -1) return true;
+        return qd && digits(r[c.key]).indexOf(qd) > -1;
+      });
+    });
+  }
+
+  if(sortCol){
+    var col2 = null;
+    for(var j=0;j<activeColumns.length;j++)
+      if(activeColumns[j].key === sortCol) col2 = activeColumns[j];
+    out = out.slice().sort(function(a,b){
+      var av = a[sortCol], bv = b[sortCol];
+      if(col2 && col2.type === "number"){
+        av = parseNumber(av); bv = parseNumber(bv);
+        av = av === null ? -Infinity : av; bv = bv === null ? -Infinity : bv;
+      }else if(col2 && col2.type === "date"){
+        var ad = parseDate(av), bd = parseDate(bv);
+        av = ad ? ad.getTime() : -Infinity; bv = bd ? bd.getTime() : -Infinity;
+      }else{ av = norm(av).toLowerCase(); bv = norm(bv).toLowerCase(); }
+      if(av < bv) return sortDir === "asc" ? -1 : 1;
+      if(av > bv) return sortDir === "asc" ? 1 : -1;
+      return 0;
+    });
+  }
+  return out;
+}
+function activeFilterCount(){
+  return Object.keys(filters).length + (globalSearch.trim() ? 1 : 0);
+}
+
+/* ==== Render ============================================================ */
+function renderAll(){
+  var has = rows.length > 0;
+  $("emptyState").classList.toggle("hidden", has);
+  $("workState").classList.toggle("hidden", !has);
+  $("btnAddMore").classList.toggle("hidden", !has);
+  $("btnExport").classList.toggle("hidden", !has);
+  $("crossHint").classList.toggle("hidden", has);
+  if(has){ renderFilters(); renderMain(); }
+  else $("subtitle").textContent = "Nenhuma consulta no histórico";
+}
+function renderMain(){
+  var filtered = getFiltered();
+  renderStats(filtered);
+  renderTable(filtered);
+  var n = activeFilterCount();
+  $("filterBadge").textContent = n;
+  $("filterBadge").classList.toggle("hidden", n === 0);
+  $("btnClear").classList.toggle("hidden", n === 0);
+  $("btnClearSearch").classList.toggle("hidden", !globalSearch);
+  $("subtitle").textContent = viewRows
+    ? "Resultado do cruzamento · " + viewRows.length.toLocaleString("pt-BR") + " linhas"
+    : rows.length.toLocaleString("pt-BR") + " consultas · " + fileLog.length + " planilha(s)";
+  $("btnExport").textContent = "Exportar " + filtered.length.toLocaleString("pt-BR");
+  $("btnExport").disabled = filtered.length === 0;
+}
+function statCard(l,v,s,a){
+  return '<div class="stat'+(a?" accent":"")+'"><div class="l">'+esc(l)+'</div>'+
+         '<div class="v">'+esc(v)+'</div>'+(s?'<div class="s">'+esc(s)+'</div>':'')+'</div>';
+}
+function hasCol(k){
+  for(var i=0;i<activeColumns.length;i++) if(activeColumns[i].key === k) return true;
+  return false;
+}
+function renderStats(filtered){
+  var html = statCard(viewRows ? "Linhas no resultado" : "Consultas filtradas",
+                      filtered.length.toLocaleString("pt-BR"),
+                      "de " + baseRows().length.toLocaleString("pt-BR"), true);
+  if(hasCol("CPF")){
+    var s = new Set();
+    filtered.forEach(function(r){ var v = normCpf(r["CPF"]); if(v) s.add(v); });
+    html += statCard("Clientes únicos", s.size.toLocaleString("pt-BR"), "CPFs distintos");
+  }
+  [["Valor Liberado","Total liberado"],["Valor Margem Disponível","Margem disponível"]]
+  .forEach(function(p){
+    if(!hasCol(p[0])) return;
+    var sum = 0, cnt = 0;
+    filtered.forEach(function(r){
+      var n = parseNumber(r[p[0]]); if(n !== null){ sum += n; cnt++; }
+    });
+    html += statCard(p[1], "R$ " + fmtNum(sum), "média R$ " + fmtNum(cnt ? sum/cnt : 0));
+  });
+  if(hasCol("Elegível")){
+    var e = {};
+    filtered.forEach(function(r){
+      var v = norm(r["Elegível"]) || "(vazio)"; e[v] = (e[v]||0)+1;
+    });
+    var chips = Object.keys(e).sort(function(a,b){ return e[b]-e[a]; }).slice(0,3)
+      .map(function(k){ return '<span class="chip"><b>'+e[k]+'</b> '+esc(k)+'</span>'; }).join("");
+    html += '<div class="stat"><div class="l">Elegibilidade</div><div class="chips">'+chips+'</div></div>';
+  }
+  $("stats").innerHTML = html;
+}
+function renderTable(filtered){
+  $("tableHead").innerHTML = activeColumns.map(function(c){
+    var ar = sortCol === c.key ? (sortDir === "asc" ? " &#9650;" : " &#9660;") : "";
+    var pri = FILTERABLE_SET.has(c.key) || c.key === MATCH_COL || c.key === SRC_COL;
+    return '<th class="'+(pri?"pri":"")+'" data-col="'+esc(c.key)+'">'+esc(c.key)+ar+'</th>';
+  }).join("");
+  $("tableBody").innerHTML = filtered.slice(0,500).map(function(r){
+    return "<tr>" + activeColumns.map(function(c){
+      var t = fmtCell(r[c.key], c.type);
+      return '<td class="'+(c.type==="number"?"num":"")+'" title="'+esc(t)+'">'+esc(t)+'</td>';
+    }).join("") + "</tr>";
+  }).join("");
+  $("noResults").classList.toggle("hidden", filtered.length > 0);
+  var f = $("tableFoot");
+  if(filtered.length > 500){
+    f.textContent = "Mostrando as primeiras 500 de " +
+      filtered.length.toLocaleString("pt-BR") + " linhas — exporte para ver todas.";
+    f.classList.remove("hidden");
+  }else f.classList.add("hidden");
+}
+function renderFilters(){
+  $("filterList").innerHTML = filterCols.map(function(col){
+    var f = filters[col.key], isOpen = !!openPanels[col.key], body = "";
+    if(isOpen){
+      if(col.type === "text"){
+        body = '<input type="text" data-fk="'+esc(col.key)+'" data-ft="text" placeholder="Contém…" value="'+
+               esc(f && f.value ? f.value : "")+'">';
+      }else if(col.type === "select"){
+        var all = distinctValues[col.key] || [];
+        var q = (optQueries[col.key] || "").toLowerCase();
+        var opts = q ? all.filter(function(v){ return v.toLowerCase().indexOf(q) > -1; }) : all;
+        var sel = (f && f.values) ? f.values : [];
+        var inner = "";
+        if(all.length > 8)
+          inner += '<input type="text" data-fk="'+esc(col.key)+'" data-ft="optq" placeholder="Buscar em '+
+                   all.length+' opções…" value="'+esc(optQueries[col.key]||"")+'">';
+        if(sel.length)
+          inner += '<div class="sel-info"><span>'+sel.length+' selecionado'+(sel.length>1?"s":"")+
+                   '</span><button data-fk="'+esc(col.key)+'" data-ft="clearsel">limpar</button></div>';
+        inner += '<div class="check-list">';
+        if(!all.length) inner += '<span class="empty-note">Sem valores</span>';
+        else if(!opts.length) inner += '<span class="empty-note">Nenhuma opção corresponde</span>';
+        else inner += opts.map(function(v){
+          return '<label class="check"><input type="checkbox" data-fk="'+esc(col.key)+
+            '" data-ft="check" data-val="'+esc(v)+'"'+(sel.indexOf(v)>-1?" checked":"")+
+            '><span>'+esc(v)+'</span></label>';
+        }).join("");
+        inner += '</div>';
+        body = inner;
+      }else if(col.type === "number"){
+        body = '<div class="range"><input type="number" data-fk="'+esc(col.key)+
+          '" data-ft="min" placeholder="mín" value="'+(f&&f.min!=null?f.min:"")+
+          '"><span>&mdash;</span><input type="number" data-fk="'+esc(col.key)+
+          '" data-ft="max" placeholder="máx" value="'+(f&&f.max!=null?f.max:"")+'"></div>';
+      }else if(col.type === "date"){
+        body = '<div class="range"><input type="date" data-fk="'+esc(col.key)+
+          '" data-ft="from" value="'+(f&&f.from?f.from:"")+'"><span>&mdash;</span>'+
+          '<input type="date" data-fk="'+esc(col.key)+'" data-ft="to" value="'+(f&&f.to?f.to:"")+'"></div>';
+      }
+    }
+    return '<div class="fc'+(f?" active":"")+'"><button class="fc-head" data-toggle="'+esc(col.key)+'">'+
+      '<span class="lbl">'+esc(col.key)+'</span><span class="rt">'+
+      (f?'<span class="fc-clear" data-fk="'+esc(col.key)+'" data-ft="clear">&times;</span>':'')+
+      (isOpen?"&#9650;":"&#9660;")+'</span></button>'+
+      (isOpen?'<div class="fc-body">'+body+'</div>':'')+'</div>';
+  }).join("");
+}
+function renderHist(){
+  var cpfs = new Set();
+  rows.forEach(function(r){ var c = normCpf(r["CPF"]); if(c) cpfs.add(c); });
+  var min = null, max = null;
+  rows.forEach(function(r){
+    var d = parseDate(r["Horário Consulta"]);
+    if(!d) return;
+    if(!min || d < min) min = d;
+    if(!max || d > max) max = d;
+  });
+  var per = function(d){ return d ? fmtCell(d,"date").slice(0,10) : "—"; };
+  $("histStats").innerHTML =
+    statLine(rows.length.toLocaleString("pt-BR"), "consultas") +
+    statLine(cpfs.size.toLocaleString("pt-BR"), "clientes únicos") +
+    statLine(String(fileLog.length), "planilhas") +
+    statLine(min ? per(min)+" → "+per(max) : "—", "período coberto");
+  $("histList").innerHTML = fileLog.length
+    ? fileLog.map(function(f){
+        return '<div class="hist-row"><div style="min-width:0"><div class="nm">'+
+          esc(f.name)+'</div><div class="mt">'+f.added.toLocaleString("pt-BR")+' novas'+
+          (f.dupes ? ' · '+f.dupes.toLocaleString("pt-BR")+' repetidas ignoradas' : '')+
+          ' · '+new Date(f.at).toLocaleDateString("pt-BR")+'</div></div></div>';
+      }).join("")
+    : '<p class="desc">Nenhuma planilha carregada ainda.</p>';
+}
+
+/* ==== Export ============================================================ */
+function exportRows(list, prefix){
+  if(!list.length) return;
+  var hs = headers.slice();
+  var hasMatch = false;
+  for(var i=0;i<list.length;i++) if(MATCH_COL in list[i]){ hasMatch = true; break; }
+  if(hasMatch){
+    if(hs.indexOf(MATCH_COL) === -1) hs.unshift(MATCH_COL);
+    if(hs.indexOf(SRC_COL) === -1) hs.unshift(SRC_COL);
+  }
+  var clean = list.map(function(r){
+    var o = {};
+    hs.forEach(function(h){
+      var v = r[h], col = null;
+      for(var j=0;j<activeColumns.length;j++)
+        if(activeColumns[j].key === h) col = activeColumns[j];
+      if(col && col.type === "date" && v) o[h] = fmtCell(v, "date");
+      else o[h] = (typeof v === "string" && v.indexOf("<") > -1) ? stripHtml(v) : v;
+    });
+    return o;
+  });
+  var ws = XLSX.utils.json_to_sheet(clean, {header:hs});
+  var csv = XLSX.utils.sheet_to_csv(ws, {FS:";"});
+  var blob = new Blob(["\uFEFF"+csv], {type:"text/csv;charset=utf-8;"});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement("a");
+  a.href = url;
+  a.download = prefix + "-" + new Date().toISOString().slice(0,10) + ".csv";
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+/* ==== Tabs ============================================================== */
+function switchTab(name){
+  var ts = document.querySelectorAll(".tab");
+  for(var i=0;i<ts.length;i++)
+    ts[i].classList.toggle("on", ts[i].getAttribute("data-tab") === name);
+  $("tab-base").classList.toggle("hidden", name !== "base");
+  $("tab-cruzar").classList.toggle("hidden", name !== "cruzar");
+  $("tab-hist").classList.toggle("hidden", name !== "hist");
+  if(name === "hist") renderHist();
+}
+
+/* ==== Events ============================================================ */
+function wireEvents(){
+  var ts = document.querySelectorAll(".tab");
+  for(var i=0;i<ts.length;i++){
+    (function(t){
+      t.addEventListener("click", function(){ switchTab(t.getAttribute("data-tab")); });
+    })(ts[i]);
+  }
+  function wireDrop(zone, handler){
+    zone.addEventListener("dragover", function(e){ e.preventDefault(); zone.classList.add("over"); });
+    zone.addEventListener("dragleave", function(){ zone.classList.remove("over"); });
+    zone.addEventListener("drop", function(e){
+      e.preventDefault(); zone.classList.remove("over");
+      if(e.dataTransfer.files && e.dataTransfer.files[0]) handler(e.dataTransfer.files[0]);
+    });
+  }
+  $("dropzone").addEventListener("click", function(){ $("fileInput").click(); });
+  wireDrop($("dropzone"), addSheet);
+  $("dzCross").addEventListener("click", function(){ $("crossInput").click(); });
+  wireDrop($("dzCross"), crossList);
+
+  $("fileInput").addEventListener("change", function(e){
+    if(e.target.files && e.target.files[0]) addSheet(e.target.files[0]);
+    e.target.value = "";
+  });
+  $("crossInput").addEventListener("change", function(e){
+    if(e.target.files && e.target.files[0]) crossList(e.target.files[0]);
+    e.target.value = "";
+  });
+  $("btnAddMore").addEventListener("click", function(){ $("fileInput").click(); });
+  $("btnAddMore2").addEventListener("click", function(){ $("fileInput").click(); });
+
+  $("btnExport").addEventListener("click", function(){
+    exportRows(getFiltered(), viewRows ? "cruzamento-filtrado" : "consultas-filtradas");
+  });
+  $("btnCrossExport").addEventListener("click", function(){
+    if(crossPending) exportRows(crossPending.rows, "cruzamento");
+  });
+  $("btnCrossToBase").addEventListener("click", function(){
+    if(!crossPending) return;
+    viewRows = crossPending.rows;
+    headers = deriveHeaders(rows.concat(viewRows));
+    if(headers.indexOf(MATCH_COL) === -1) headers.unshift(MATCH_COL);
+    if(headers.indexOf(SRC_COL) === -1) headers.unshift(SRC_COL);
+    filters = {}; openPanels = {}; optQueries = {}; globalSearch = "";
+    $("globalSearch").value = "";
+    buildColumns(); buildDistinct();
+    renderAll(); switchTab("base");
+  });
+  $("btnCrossDiscard").addEventListener("click", function(){
+    crossPending = null; viewRows = null;
+    headers = deriveHeaders(rows);
+    buildColumns(); buildDistinct();
+    $("crossResult").classList.add("hidden");
+    renderAll();
+  });
+
+  $("btnWipe").addEventListener("click", function(){
+    if(!confirm("Apagar todas as consultas do histórico?\n\nIsso não pode ser desfeito.")) return;
+    dbClear(STORE).then(function(){ return dbClear(META); }).then(function(){
+      rows = []; headers = []; fileLog = []; viewRows = null; crossPending = null;
+      filters = {}; openPanels = {}; optQueries = {}; globalSearch = "";
+      $("crossResult").classList.add("hidden");
+      renderAll(); renderHist();
+    });
+  });
+
+  function clearAllFilters(){
+    filters = {}; globalSearch = ""; optQueries = {};
+    $("globalSearch").value = ""; renderAll();
+  }
+  $("btnClear").addEventListener("click", clearAllFilters);
+  $("btnClear2").addEventListener("click", clearAllFilters);
+  $("btnClearSearch").addEventListener("click", function(){
+    globalSearch = ""; $("globalSearch").value = ""; renderMain();
+  });
+
+  var st = null;
+  $("globalSearch").addEventListener("input", function(e){
+    globalSearch = e.target.value;
+    clearTimeout(st); st = setTimeout(renderMain, 180);
+  });
+
+  $("tableHead").addEventListener("click", function(e){
+    var th = e.target.closest("th"); if(!th) return;
+    var k = th.getAttribute("data-col");
+    if(sortCol === k) sortDir = sortDir === "asc" ? "desc" : "asc";
+    else { sortCol = k; sortDir = "asc"; }
+    renderMain();
+  });
+
+  var fl = $("filterList");
+  fl.addEventListener("click", function(e){
+    var tg = e.target.closest("[data-toggle]");
+    var cx = e.target.closest('[data-ft="clear"]');
+    var cs = e.target.closest('[data-ft="clearsel"]');
+    if(cx){ e.stopPropagation(); delete filters[cx.getAttribute("data-fk")];
+            renderFilters(); renderMain(); return; }
+    if(cs){ e.stopPropagation(); delete filters[cs.getAttribute("data-fk")];
+            renderFilters(); renderMain(); return; }
+    if(tg){ var k = tg.getAttribute("data-toggle");
+            openPanels[k] = !openPanels[k]; renderFilters(); }
+  });
+  fl.addEventListener("change", function(e){
+    var el = e.target;
+    if(el.getAttribute("data-ft") !== "check") return;
+    var key = el.getAttribute("data-fk"), val = el.getAttribute("data-val");
+    var cur = new Set((filters[key] && filters[key].values) || []);
+    if(el.checked) cur.add(val); else cur.delete(val);
+    if(cur.size) filters[key] = {values:Array.from(cur)}; else delete filters[key];
+    renderFilters(); renderMain();
+  });
+  var it = null;
+  fl.addEventListener("input", function(e){
+    var el = e.target;
+    var key = el.getAttribute("data-fk"), ft = el.getAttribute("data-ft");
+    if(!key || !ft) return;
+    if(ft === "optq"){
+      optQueries[key] = el.value;
+      clearTimeout(it);
+      it = setTimeout(function(){
+        var pos = el.selectionStart; renderFilters();
+        var again = fl.querySelector('[data-fk="'+CSS.escape(key)+'"][data-ft="optq"]');
+        if(again){ again.focus(); again.setSelectionRange(pos,pos); }
+      }, 160);
+      return;
+    }
+    var f = {};
+    if(filters[key]) for(var kk in filters[key]) f[kk] = filters[key][kk];
+    if(ft === "text"){
+      if(el.value) f.value = el.value; else delete f.value;
+      if(f.value) filters[key] = f; else delete filters[key];
+    }else if(ft === "min" || ft === "max"){
+      if(el.value === "") delete f[ft]; else f[ft] = parseFloat(el.value);
+      if(f.min !== undefined || f.max !== undefined) filters[key] = f; else delete filters[key];
+    }else if(ft === "from" || ft === "to"){
+      if(el.value === "") delete f[ft]; else f[ft] = el.value;
+      if(f.from || f.to) filters[key] = f; else delete filters[key];
+    }
+    clearTimeout(it);
+    it = setTimeout(function(){
+      renderMain();
+      var n = activeFilterCount();
+      $("filterBadge").textContent = n;
+      $("filterBadge").classList.toggle("hidden", n === 0);
+      $("btnClear").classList.toggle("hidden", n === 0);
+      var card = el.closest(".fc");
+      if(card) card.classList.toggle("active", !!filters[key]);
+    }, 200);
+  });
+}
+
+/* ==== Boot ============================================================== */
+function boot(){
+  wireEvents();
+  openDB().then(function(d){
+    db = d;
+    return loadFromDB();
+  }).then(function(){
+    renderAll(); renderHist();
+  }).catch(function(err){
+    console.error(err);
+    alert("Não foi possível abrir o armazenamento local. O histórico não será salvo.\n\n" +
+          "Isso costuma acontecer em janela anônima.");
+    renderAll(); renderHist();
+  });
+}
+if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
+else boot();
+</script>
+</body>
+</html>
